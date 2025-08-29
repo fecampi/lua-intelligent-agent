@@ -1,0 +1,36 @@
+# Environment variables
+.env
+
+# Lua
+*.o
+*.so
+*.dll
+*.dylib
+*.a
+*.lua~
+*.luac
+
+# LuaRocks build directories
+/lua_modules/
+/.luarocks/
+
+# Dependencies installed by LuaRocks
+/lib/lua/
+/share/lua/
+
+# Logs
+*.log
+
+# Docker
+.docker/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Operating System
+.DS_Store
+Thumbs.db
