@@ -43,7 +43,7 @@ sudo docker build -t lua-agent .
 
 ### 4. Run the main script
 ```sh
-sudo docker run --rm -v $(pwd):/app -e GOOGLE_API_KEY=$(grep GOOGLE_API_KEY .env | cut -d '=' -f2-) lua-agent lua5.4 lia_agent.lua
+sudo docker run --rm -v $(pwd):/app -e GOOGLE_API_KEY=$(grep GOOGLE_API_KEY .env | cut -d '=' -f2-) lua-agent lua5.4 demo.lua
 ```
 
 ## Project Structure
