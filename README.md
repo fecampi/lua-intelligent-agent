@@ -25,7 +25,7 @@ This project demonstrates how to consume the Gemini API (Google Generative AI) u
 
 ### 1. Clone the repository
 ```sh
-git clone <url-do-seu-repo>
+git clone https://github.com/fecampi/lua-intelligent-agent.git
 cd lua-intelligent-agent
 ```
 
@@ -52,13 +52,31 @@ sudo docker run --rm -v $(pwd):/app -e GOOGLE_API_KEY=$(grep GOOGLE_API_KEY .env
 - `lib/gemini.lua`: Module for Gemini API integration.
 - `Dockerfile`: Ready-to-use environment with all dependencies.
 
-## Notes
-- Do not share your API key publicly.
-- To install dependencies locally (outside Docker), use:
-  ```sh
-  luarocks install luasocket luasec lua-cjson dotenv
-  ```
+## Output Example
+
+When analyzing device logs, the API returns a detailed analysis:
+
+```
+**1. Devices with issues:**
+
+- device_1
+- device_2
+
+**2. Context grouping and problem description:**
+
+- **player.buffering:** Device device_1 experienced playback stalling after 10 seconds. This indicates a buffering issue or insufficient download speed.
+
+- **ws.connection:** Device device_2 had an unexpected WebSocket disconnection. This might indicate network issues, connection instability, or WebSocket server errors.
+
+- **ads.loader:** Device device_1 failed to fetch a VAST ad. This could indicate issues with the ad server, VAST configuration, or network connectivity.
+
+**3. Patterns and possible causes:**
+
+- **device_1 shows issues in player.buffering and ads.loader.** This might indicate an unstable network or low bandwidth, affecting both content playback and ad loading. Specific issues with device_1's player might also be contributing to the stalling.
+
+- **The unexpected WebSocket disconnection on device_2 (ws.connection)** suggests a network issue on the device or a WebSocket failure. It's important to check device_2's network connection stability and WebSocket server health.
+```
 
 ---
 
-Questions? Open an issue or ask for help!
+
