@@ -1,13 +1,22 @@
-local Gemini = require("lib.gemini")
+local Gemini = require("lib.llm.gemini")
+local Gemma = require("lib.llm.gemma")
 
 local LiaAgent = {}
 LiaAgent.__index = LiaAgent
 
-function LiaAgent:new(api_key, model)
+function LiaAgent:new(opts)
+    -- opts: { llm = "gemini" | "gemma", api_key, model, base_url }
     local self = setmetatable({}, LiaAgent)
-    self.model = model or "gemini-2.0-flash"
-    self.gemini = Gemini:new(api_key, self.model)
+    self.llm = opts.llm or "gemini"
+    self.model = opts.model or "gemini-2.0-flash"
     self.system_prompt = nil
+    if self.llm == "gemini" then
+        self.llm_instance = Gemini:new(opts.api_key, self.model)
+    elseif self.llm == "gemma" then
+        self.llm_instance = Gemma:new(opts.base_url)
+    else
+        error("Unsupported LLM: " .. tostring(self.llm))
+    end
     return self
 end
 
@@ -24,14 +33,17 @@ local function table_to_json(tbl)
     end
 end
 
-function LiaAgent:ask(data, question)
-    local json_data = table_to_json(data)
+function LiaAgent:ask(question, data)
+    data = data or {}
     local final_system_prompt = self.system_prompt or ""
-    final_system_prompt = final_system_prompt .. "\n### DATA (JSON)\n" .. json_data
+    if next(data) ~= nil then
+        local json_data = table_to_json(data)
+        final_system_prompt = final_system_prompt .. "\n### DATA (JSON)\n" .. json_data
+    end
     if question and question ~= "" then
         final_system_prompt = final_system_prompt .. "\n" .. question
     end
-    local resposta, json = self.gemini:send_prompt(final_system_prompt)
+    local resposta, json = self.llm_instance:send_prompt(final_system_prompt)
     return resposta, json
 end
 
