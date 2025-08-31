@@ -7,9 +7,10 @@ local LiaAgentInterface = require("lib/llm/agent_interface")
 local terminal = require("lib.terminal")
 local logs = require("demo/logs/tv")
 local configs = require("configs")
+local ToolService = require("lib.llm.shared.tool_service")
 
 -- Selecionar a configuração desejada
-local selected_config = configs.gemma-- Altere para gemma  ou gemini
+local selected_config = configs.gemini-- Altere para gemma  ou gemini
 
 
 -- Criar uma instância da interface
@@ -23,8 +24,11 @@ local function read_file(path)
     return content
 end
 
-local SYSTEM_PROMPT = read_file("demo/prompts/chat_persona_memory_prompt.txt")
+local SYSTEM_PROMPT = read_file("demo/prompts/analyze_logs_prompt.txt")
 agent:set_system_prompt(SYSTEM_PROMPT)
+
+local toolService = ToolService:new(agent) -- Passa o agente para o ToolService
+agent.toolService = toolService
 
 terminal.output("Bem-vindo ao agente IA!")
 terminal.output("Digite sua pergunta ou 'exit' para sair.")

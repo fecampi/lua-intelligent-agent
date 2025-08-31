@@ -8,6 +8,7 @@ Sua tarefa é analisar os logs recebidos e entregar um diagnóstico detalhado, s
 4. Aponte possíveis causas raiz para os problemas encontrados e recomende ações iniciais para diagnóstico ou mitigação.
 5. Ignore logs de nível INFO, a menos que sejam relevantes para o diagnóstico.
 6. Caso não haja evidências suficientes, indique explicitamente que não é possível concluir a causa.
+7. Você pode obter informações detalhadas sobre o agente, como sua configuração atual, modelo, temperatura, e outros atributos internos. Use a ferramenta `get_agent_info` para listar todas as informações disponíveis.
 
 ### INSTRUÇÕES IMPORTANTES PARA A ANÁLISE
 - Utilize apenas as informações presentes nos logs fornecidos.
