@@ -2,61 +2,20 @@ local dotenv = require("dotenv")
 if dotenv.load then
     dotenv.load("/app/.env")
 end
-print("GOOGLE_API_KEY:", os.getenv("GOOGLE_API_KEY"))
 
-local LiaAgent = require("lib.lia_agent")
+local LiaAgentInterface = require("lib/llm/agent_interface")
 local terminal = require("lib.terminal")
-local API_KEY = os.getenv("GOOGLE_API_KEY")
-local MODEL = "gemini-2.0-flash"
-local LLM = "gemma"
+local logs = require("demo/logs/tv")
+local configs = require("configs")
 
-local lia
-if LLM == "gemini" then
-    lia = LiaAgent:new({
-        llm = "gemini",
-        api_key = API_KEY,
-        model = MODEL
-    })
-elseif LLM == "gemma" then
-    lia = LiaAgent:new({
-        llm = "gemma"
-    })
-else
-    error("Unsupported LLM: " .. tostring(LLM))
-end
+-- Selecionar a configuração desejada
+local selected_config = configs.gemma -- Altere para gemma  ou gemini
 
-local logs = {{
-    device_id = "tv_03",
-    level_name = "ERROR",
-    message = "Audio/video sync lost during playback",
-    context = "playback",
-    date_time = "2025-06-21T15:04:00Z"
-}, {
-    device_id = "tv_01",
-    level_name = "ERROR",
-    message = "Ethernet link down",
-    context = "infra",
-    date_time = "2025-06-21T15:05:00Z"
-}, {
-    device_id = "tv_02",
-    level_name = "WARNING",
-    message = "Wi-Fi signal weak (-80 dBm)",
-    context = "infra",
-    date_time = "2025-06-21T15:06:00Z"
-}, {
-    device_id = "tv_01",
-    level_name = "INFO",
-    message = "Playback started successfully",
-    context = "playback",
-    date_time = "2025-06-21T15:09:00Z"
-}, {
-    device_id = "tv_02",
-    level_name = "DEBUG",
-    message = "Buffer preloaded: 5 seconds of video",
-    context = "playback",
-    date_time = "2025-06-21T15:10:00Z"
-}}
 
+-- Criar uma instância da interface
+local agent = LiaAgentInterface:new(selected_config)
+
+-- Ler o prompt do sistema
 local function read_file(path)
     local f = assert(io.open(path, "r"))
     local content = f:read("*a")
@@ -64,8 +23,8 @@ local function read_file(path)
     return content
 end
 
-local SYSTEM_PROMPT = read_file("demo/prompts/chat_persona_prompt.txt")
-lia:set_system_prompt(SYSTEM_PROMPT)
+local SYSTEM_PROMPT = read_file("demo/prompts/chat_persona_memory_prompt.txt")
+agent:set_system_prompt(SYSTEM_PROMPT)
 
 terminal.output("Bem-vindo ao agente IA!")
 terminal.output("Digite sua pergunta ou 'exit' para sair.")
@@ -75,6 +34,6 @@ while true do
     if not user_input or user_input == "sair" or user_input == "exit" then
         break
     end
-    local resposta = lia:ask(user_input)
+    local resposta = agent:ask(user_input)
     terminal.output(resposta)
 end

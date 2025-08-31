@@ -113,7 +113,7 @@ To experiment with open-source LLMs like Gemma, you can use [Ollama](https://oll
 3. **Test the API:**
 
 ```sh
-sudo docker run -it --rm --network=host -v $(pwd):/app lua-agent lua5.4 demo.lua
+sudo docker run -it --rm --network=host -v $(pwd):/app -e GOOGLE_API_KEY=$(grep GOOGLE_API_KEY .env | cut -d '=' -f2-) lua-agent lua5.4 demo.lua
 ```
 
 ---
