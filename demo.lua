@@ -9,7 +9,7 @@ local logs = require("demo/logs/tv")
 local configs = require("configs")
 
 -- Selecionar a configuração desejada
-local selected_config = configs.gemma -- Altere para gemma  ou gemini
+local selected_config = configs.gemma-- Altere para gemma  ou gemini
 
 
 -- Criar uma instância da interface

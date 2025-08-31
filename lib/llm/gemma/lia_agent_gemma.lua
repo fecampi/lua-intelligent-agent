@@ -20,32 +20,40 @@ function LiaAgentGemma:set_system_prompt(system_prompt)
     self.system_prompt = system_prompt
 end
 
+local function prepare_payload_gemma(data, system_prompt, conversation_history, model, temperature)
+    local req_table = {
+        model = model,
+        temperature = temperature,
+        messages = {}
+    }
+
+    -- Adicionar o system_prompt como a primeira mensagem, se definido
+    if system_prompt then
+        table.insert(req_table.messages, { role = "system", content = system_prompt })
+    end
+
+    -- Adicionar o histórico às mensagens diretamente no payload
+    for _, entry in ipairs(conversation_history) do
+        table.insert(req_table.messages, { role = entry.role, content = entry.content })
+    end
+
+    -- Adicionar dados adicionais, se fornecidos
+    if next(data) ~= nil then
+        table.insert(req_table.messages, { role = "system", content = "### DATA (JSON)\n" .. cjson.encode(data) })
+    end
+
+    -- Antes de enviar o histórico para a LLM
+    print("[DEBUG] Mensagens enviadas:", cjson.encode(req_table.messages))
+
+    return req_table
+end
+
 function LiaAgentGemma:ask(question, data)
     data = data or {}
     self.conversationHistoryService:add("user", question)
 
-    local messages = {}
-
-    -- Adicionar o system_prompt como a primeira mensagem, se definido
-    if self.system_prompt then
-        table.insert(messages, { role = "system", content = self.system_prompt })
-    end
-
-    -- Adicionar o histórico às mensagens
-    for _, entry in ipairs(self.conversationHistoryService:get()) do
-        table.insert(messages, { role = entry.role, content = entry.content })
-    end
-
-    -- Adicionando logs detalhados para depuração
-    print("[DEBUG] Pergunta recebida:", question)
-    print("[DEBUG] Histórico atual:", cjson.encode(self.conversationHistoryService:get()))
-    print("[DEBUG] Dados adicionais:", data)
-
-    local req_table = {
-        model = self.model,
-        temperature = self.temperature, 
-        messages = messages
-    }
+    -- Preparar o payload usando a função independente
+    local req_table = prepare_payload_gemma(data, self.system_prompt, self.conversationHistoryService:get(), self.model, self.temperature)
 
     print("[DEBUG] Payload enviado:", cjson.encode(req_table))
 

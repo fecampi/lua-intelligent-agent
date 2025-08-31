@@ -20,36 +20,7 @@ function LiaAgentGemini:set_system_prompt(system_prompt)
     self.system_prompt = system_prompt
 end
 
-function LiaAgentGemini:ask(question, data)
-    data = data or {}
-    self.conversationHistoryService:add("user", question)
-
-    local messages = {}
-
-    -- Adicionar o system_prompt como a primeira mensagem, se definido
-    if self.system_prompt then
-        table.insert(messages, { role = "system", content = self.system_prompt })
-    end
-
-    -- Adicionar o histórico às mensagens
-    for _, entry in ipairs(self.conversationHistoryService:get()) do
-        table.insert(messages, { role = entry.role, content = entry.content })
-    end
-
-    -- Adicionando logs detalhados para depuração
-    print("[DEBUG] Pergunta recebida:", question)
-    print("[DEBUG] Histórico atual:", cjson.encode(self.conversationHistoryService:get()))
-    print("[DEBUG] Dados adicionais:", data)
-
-    if next(data) ~= nil then
-        local json_data = cjson.encode(data)
-        table.insert(messages, { role = "system", content = "### DATA (JSON)\n" .. json_data })
-    end
-
-    -- Antes de enviar o histórico para a LLM
-    print("[DEBUG] Mensagens enviadas:", cjson.encode(messages))
-
-    -- Ajustando o payload para incluir a temperatura no generationConfig
+function LiaAgentGemini:prepare_payload(data)
     local req_body = {
         contents = {{
             parts = {}
@@ -62,11 +33,33 @@ function LiaAgentGemini:ask(question, data)
         }
     }
 
-    for _, message in ipairs(messages) do
-        table.insert(req_body.contents[1].parts, {
-            text = message.content
-        })
+    -- Adicionar o system_prompt como a primeira mensagem, se definido
+    if self.system_prompt then
+        table.insert(req_body.contents[1].parts, { text = self.system_prompt })
     end
+
+    -- Adicionar o histórico às mensagens diretamente no payload
+    for _, entry in ipairs(self.conversationHistoryService:get()) do
+        table.insert(req_body.contents[1].parts, { text = entry.content })
+    end
+
+    if next(data) ~= nil then
+        local json_data = cjson.encode(data)
+        table.insert(req_body.contents[1].parts, { text = "### DATA (JSON)\n" .. json_data })
+    end
+
+    -- Antes de enviar o histórico para a LLM
+    print("[DEBUG] Mensagens enviadas:", cjson.encode(req_body.contents[1].parts))
+
+    return req_body
+end
+
+function LiaAgentGemini:ask(question, data)
+    data = data or {}
+    self.conversationHistoryService:add("user", question)
+
+    -- Preparar o payload usando a nova função
+    local req_body = self:prepare_payload(data)
 
     -- Adicionando log para depuração
     print("[Gemini] Payload ajustado enviado com generationConfig:", cjson.encode(req_body))
