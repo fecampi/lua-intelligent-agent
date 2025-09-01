@@ -1,26 +1,3 @@
-## Testing Gemma Integration with Docker
-
-To test the integration with Gemma running locally via Ollama, follow these steps:
-
-1. **Start Ollama and the Gemma model on your host (outside Docker):**
-
-   ```sh
-   ollama run gemma:2.7b
-   ```
-
-   ```
-
-   ```
-
-2. **Run the test inside the Docker container:**
-   ```sh
-   sudo docker run --rm -v $(pwd):/app lua-agent lua5.4 test_gemma.lua
-   ```
-
-> Make sure your Docker container can access `http://localhost:11434` on the host. If you have issues, you may need to adjust Docker network settings or run the Lua script outside Docker for local testing.
-
----
-
 # Lua Intelligent Agent (L.I.A)
 
 ## Introduction
@@ -74,47 +51,15 @@ sudo docker run --rm -v $(pwd):/app -e GOOGLE_API_KEY=$(grep GOOGLE_API_KEY .env
 
 ## Project Structure
 
-- `demo.lua`: Main example using the LIA agent abstraction.
-- `lib/lia_agent.lua`: LIA agent class, which abstracts LLM usage.
-- `lib/llm/`: Directory for LLM (Large Language Model) classes.
-  - `gemini.lua`: Gemini API integration (Google Generative AI).
-  - (future) `gemma.lua`, `chatgpt.lua`, etc.
+- `demo.lua`: Main script demonstrating the use of the LIA agent abstraction.
+- `lib/lia_agent.lua`: LIA agent class, which abstracts the usage of LLMs.
+- `lib/llm/`: Directory for Large Language Model (LLM) classes.
+  - `gemini/lia_agent_gemini.lua`: Integration with the Gemini API (Google Generative AI).
+  - `gemma/lia_agent_gemma.lua`: Integration with the Gemma model.
+  - `shared/`: Shared components between different LLMs.
 - `lib/request.lua`: Module for HTTP/HTTPS requests and JSON handling.
-- `Dockerfile`: Ready-to-use environment with all dependencies.
+- `Dockerfile`: Ready-to-use environment with all dependencies configured.
 
-## Supported LLMs
-
-This project is designed to support multiple LLMs (Large Language Models) via the `lib/llm/` directory. Currently, it includes:
-
-- **Gemini** (Google Generative AI): Cloud-based, requires API key.
-
-You can easily add new LLM classes (e.g., for Gemma, ChatGPT, etc.) in the `lib/llm/` folder and use them via the LIA agent abstraction.
-
-## Running Gemma Locally with Ollama (Ubuntu)
-
-To experiment with open-source LLMs like Gemma, you can use [Ollama](https://ollama.com/) to run models locally:
-
-1. **Install Ollama:**
-
-   ```sh
-   curl -fsSL https://ollama.com/install.sh | sh
-   sudo systemctl start ollama
-   sudo systemctl enable ollama
-   ```
-
-2. **Download and run the Gemma 3B 270M model:**
-
-   ```sh
-   ollama run gemma:2.7b
-   ```
-
-   > You can replace `2.7b` with another available Gemma model tag if needed.
-
-3. **Test the API:**
-
-```sh
-sudo docker run -it --rm --network=host -v $(pwd):/app -e GOOGLE_API_KEY=$(grep GOOGLE_API_KEY .env | cut -d '=' -f2-) lua-agent lua5.4 demo.lua
-```
 
 ---
 
@@ -144,3 +89,43 @@ When analyzing device logs, the API returns a detailed analysis:
 ```
 
 ---
+
+## Interaction Example
+
+Below is an example of an interaction with the Lua Intelligent Agent (L.I.A):
+
+```plaintext
+User: Para qual finalidade você foi criado e qual é a função ou papel que se espera que você desempenha?
+AI: Fui criado para ser a L.I.A (Lua Intelligent Agent), um agente inteligente especializado em análise de logs técnicos de dispositivos como Smart TVs, IoT, set-top boxes e sistemas embarcados. Espera-se que eu analise logs, entregue diagnósticos detalhados, identifique problemas, aponte causas raiz e recomende ações, tudo com base nas informações contidas nos logs fornecidos.
+
+User: Você poderia listar todas as seções de logs que estão armazenadas no sistema?
+AI: [101,102,103]
+
+User: Você poderia explicar se ocorreu algum erro na primeira seção de logs armazenada?
+AI: ["warn: Playback stalled","error: WebSocket disconnected"]
+
+User: Você poderia fornecer uma explicação técnica sobre o problema que ocorreu durante a reprodução?
+AI: Com base nos logs da sessão 101, o problema identificado durante a reprodução é que o playback foi interrompido (stalled). Isso significa que a reprodução do conteúdo foi interrompida inesperadamente. A causa raiz para essa interrupção não pode ser determinada apenas com essa informação.
+```
+
+---
+
+## Project Architecture
+
+The project architecture is modular and designed to be extensible, allowing the integration of different Large Language Models (LLMs) and services. Below is a diagram illustrating the main components of the project:
+
+```plaintext
++-------------------+       +-------------------+       +-------------------+
+|                   |       |                   |       |                   |
+|   demo.lua        +------>+   LIA Agent       +------>+   LLMs            |
+|                   |       |                   |       |                   |
++-------------------+       +-------------------+       +-------------------+
+        |                        |                           |
+        |                        |                           |
+        v                        v                           v
++-------------------+   +-------------------+       +-------------------+
+|                   |   |                   |       |                   |
+|   Tool Service    |   | Conversation      |       | HTTP Request      |
+|                   |   | History Service   |       | Module           |
++-------------------+   +-------------------+       +-------------------+
+```

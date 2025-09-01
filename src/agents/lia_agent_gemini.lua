@@ -40,27 +40,25 @@ function LiaAgentGemini:prepare_payload(data)
         }
     }
 
-    -- Adiciona system prompt
-    if self.system_prompt then
+   
+    if self.system_prompt and #self.system_prompt > 0 then
         table.insert(req_body.contents[1].parts, {
-            text = self.system_prompt
+            text = "### SYSTEM PROMPT\n" .. self.system_prompt
         })
     end
 
-    -- Adiciona histórico de conversa
-    table.insert(req_body.contents[1].parts, {
-        text = cjson.encode(self.conversationHistoryService:get())
-    })
+    for _, entry in ipairs(self.conversationHistoryService:get()) do
+        table.insert(req_body.contents[1].parts, {
+            text = entry.content
+        })
+    end
 
-    -- Adiciona dados adicionais em JSON
     if next(data) ~= nil then
         local json_data = cjson.encode(data)
         table.insert(req_body.contents[1].parts, {
             text = "### DATA (JSON)\n" .. json_data
         })
     end
-
-    -- print("[DEBUG] Formato final do payload:", cjson.encode(req_body)) -- Log do formato final do payload
 
     return req_body
 end
@@ -102,7 +100,6 @@ function LiaAgentGemini:ask(question, data)
             body = encoded_body
         }
 
-
         if resp.code == 200 and resp.json then
             local candidate = resp.json.candidates and resp.json.candidates[1]
 
@@ -116,17 +113,15 @@ function LiaAgentGemini:ask(question, data)
                     local function_name = part.functionCall.name
                     local function_args = part.functionCall.args or {}
 
-                    print("[DEBUG] Função chamada:", function_name, "com argumentos:", cjson.encode(function_args)) -- Log da função chamada
-
                     -- Executa a ferramenta diretamente pelo ToolService
                     local tool_result = self.toolService:execute_tool_by_name(function_name, function_args)
                     local tool_message = "Ferramenta executada com sucesso: " .. function_name
 
-                    print("[DEBUG] Resultado da ferramenta:", cjson.encode(tool_result)) -- Log do resultado da ferramenta
+                  
 
                     self.conversationHistoryService:add("assistant", tool_message)
 
-                    -- Adicione o resultado da ferramenta ao histórico para enviar de volta à IA
+        
                     local result_message = cjson.encode(tool_result)
                     self.conversationHistoryService:add("assistant", "### RESULTADO DA FERRAMENTA\n" .. result_message)
 
@@ -137,7 +132,7 @@ function LiaAgentGemini:ask(question, data)
 
                     -- Retornar o resultado da ferramenta diretamente ao usuário
                     local formatted_result = cjson.encode(tool_result)
-                    print("[Tool Execution Result]", formatted_result)
+        
                     return formatted_result, resp.json
                 end
             end

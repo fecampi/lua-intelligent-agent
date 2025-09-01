@@ -1,5 +1,7 @@
 local LogDataProvider = require("src/providers/log_data_provider")
 
+local logProvider = LogDataProvider:new() 
+
 local tools = {{
     name = "getLogs",
     description = "Busca os logs (erros, avisos, eventos) de uma sessão específica pelo ID da sessão. Caso não saiba o ID, utilize getAvailableSessions para obter um ID válido antes de chamar esta função.",
