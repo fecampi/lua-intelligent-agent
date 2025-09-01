@@ -30,7 +30,7 @@ function LiaAgentGemini:prepare_payload(data)
             parts = {}
         }},
         tools = {
-            function_declarations = self.toolService:clean_tools()
+            function_declarations = self.toolService:get_tools()
         },
         generationConfig = {
             temperature = self.temperature,
@@ -48,11 +48,9 @@ function LiaAgentGemini:prepare_payload(data)
     end
 
     -- Adiciona histórico de conversa
-    for _, entry in ipairs(self.conversationHistoryService:get()) do
-        table.insert(req_body.contents[1].parts, {
-            text = entry.content
-        })
-    end
+    table.insert(req_body.contents[1].parts, {
+        text = cjson.encode(self.conversationHistoryService:get())
+    })
 
     -- Adiciona dados adicionais em JSON
     if next(data) ~= nil then
@@ -62,19 +60,25 @@ function LiaAgentGemini:prepare_payload(data)
         })
     end
 
-    -- Debug
-    -- print("[DEBUG] Mensagens enviadas:", cjson.encode(req_body.contents[1].parts))
-    -- print("[DEBUG] Tools enviadas:", cjson.encode(req_body.tools))
+    -- print("[DEBUG] Formato final do payload:", cjson.encode(req_body)) -- Log do formato final do payload
 
     return req_body
 end
 
 function LiaAgentGemini:execute_tool(function_name, function_args)
-    local tool = self.toolService:get_tool(function_name)
-    if tool and tool.callback then
-        return tool.callback(function_args)
+    local tool_data = self.toolService:get_tool(function_name)
+    if tool_data and tool_data.callback then
+        return tool_data.callback(function_args)
     end
-    error("[Tool Execution] Ferramenta não encontrada: " .. function_name)
+    error("[Tool Execution] Ferramenta não encontrada ou sem callback: " .. function_name)
+end
+
+function LiaAgentGemini:add_tool(tool, callback)
+    self.toolService:add_tool(tool, callback)
+end
+
+function LiaAgentGemini:add_tools(tools)
+    self.toolService:add_tools(tools)
 end
 
 -- Atualizar o método ask para usar execute_tool
@@ -84,24 +88,20 @@ function LiaAgentGemini:ask(question, data)
 
     local req_body = self:prepare_payload(data)
 
-    -- print("[Gemini] Payload ajustado enviado com generationConfig:", cjson.encode(req_body))
-
     local url = "https://generativelanguage.googleapis.com/v1beta/models/" .. self.model .. ":generateContent?key=" ..
                     self.api_key
 
     while true do
+        local encoded_body = cjson.encode(req_body)
+
         local resp = request.post {
             url = url,
             headers = {
                 ["Content-Type"] = "application/json"
             },
-            body = cjson.encode(req_body)
+            body = encoded_body
         }
 
-        -- print("[DEBUG] Resposta recebida:", resp.raw)
-        if resp.json then
-            -- print("[DEBUG] JSON recebido:", cjson.encode(resp.json))
-        end
 
         if resp.code == 200 and resp.json then
             local candidate = resp.json.candidates and resp.json.candidates[1]
@@ -110,45 +110,39 @@ function LiaAgentGemini:ask(question, data)
                 local part = candidate.content.parts[1]
 
                 if part.text then
-                    -- Resposta de texto normal, como esperado.
                     self.conversationHistoryService:add("assistant", part.text)
                     return part.text, resp.json
                 elseif part.functionCall then
-                    -- Executar a ferramenta chamada
                     local function_name = part.functionCall.name
                     local function_args = part.functionCall.args or {}
 
-                    -- Verificar se a ferramenta existe usando ToolService
-                    local tool = self.toolService:get_tool(function_name)
+                    print("[DEBUG] Função chamada:", function_name, "com argumentos:", cjson.encode(function_args)) -- Log da função chamada
 
-                    if tool and tool.callback then
-                        local tool_result = tool.callback(function_args)
-                        local tool_message = "Ferramenta executada com sucesso: " .. function_name
+                    -- Executa a ferramenta diretamente pelo ToolService
+                    local tool_result = self.toolService:execute_tool_by_name(function_name, function_args)
+                    local tool_message = "Ferramenta executada com sucesso: " .. function_name
 
-                        -- Adicione esta resposta amigável ao histórico
-                        self.conversationHistoryService:add("assistant", tool_message)
+                    print("[DEBUG] Resultado da ferramenta:", cjson.encode(tool_result)) -- Log do resultado da ferramenta
 
-                        -- Adicione o resultado da ferramenta ao histórico para enviar de volta à IA
-                        local result_message = cjson.encode(tool_result)
-                        self.conversationHistoryService:add("assistant",
-                            "### RESULTADO DA FERRAMENTA\n" .. result_message)
+                    self.conversationHistoryService:add("assistant", tool_message)
 
-                        -- Atualize o payload com o resultado da ferramenta
-                        req_body = self:prepare_payload({
-                            tool_result = tool_result
-                        })
+                    -- Adicione o resultado da ferramenta ao histórico para enviar de volta à IA
+                    local result_message = cjson.encode(tool_result)
+                    self.conversationHistoryService:add("assistant", "### RESULTADO DA FERRAMENTA\n" .. result_message)
 
-                        -- Retornar o resultado da ferramenta diretamente ao usuário
-                        local formatted_result = cjson.encode(tool_result)
-                        print("[Tool Execution Result]", formatted_result)
-                        return formatted_result, resp.json
-                    else
-                        error("[Tool Execution] Ferramenta não encontrada ou sem callback: " .. function_name)
-                    end
+                    -- Atualize o payload com o resultado da ferramenta
+                    req_body = self:prepare_payload({
+                        tool_result = tool_result
+                    })
+
+                    -- Retornar o resultado da ferramenta diretamente ao usuário
+                    local formatted_result = cjson.encode(tool_result)
+                    print("[Tool Execution Result]", formatted_result)
+                    return formatted_result, resp.json
                 end
             end
         else
-            -- Retorna a resposta crua ou nula em caso de erro
+            print("[DEBUG] Erro na resposta da API:", resp.raw) -- Log do erro na resposta
             return nil, resp.raw
         end
     end

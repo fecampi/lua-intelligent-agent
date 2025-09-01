@@ -18,6 +18,7 @@ end
 
 function LogDataProvider:getAvailableSessions()
     print("LogDataProvider: Listando sessões disponíveis")
+    print("LogDataProvider: Estado atual de sessionLogs:", self.sessionLogs) -- Adiciona log para depuração
     local sessions = {}
     for sessionId, _ in pairs(self.sessionLogs) do
         table.insert(sessions, sessionId)

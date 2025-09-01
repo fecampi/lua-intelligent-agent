@@ -1,99 +1,63 @@
-local LogDataProvider = require("src/providers/log_data_provider")
-
+local cjson = require("cjson")
 local ToolService = {}
 ToolService.__index = ToolService
 
-function ToolService:new(agent)
+function ToolService:new()
     local self = setmetatable({}, ToolService)
-    self.agent = agent -- Armazena a referência ao agente
-    self.logProvider = LogDataProvider:new()
-    self.tools = {{
-        name = "get_temperature",
-        description = "Retorna a temperatura atual configurada no agente.",
-        parameters = {
-            type = "OBJECT",
-            properties = {}
-        },
-        callback = function()
-            print("[Tool Execution] Obtendo a temperatura atual...")
-            if not self.agent then
-                error("[Tool Execution] O agente não foi definido corretamente no ToolService.")
-            end
-            return {
-                temperature = self.agent.temperature 
-            }
-        end
-    }, {
-        name = "getLogs",
-        description = "Busca os logs (erros, avisos, eventos) de uma sessão específica pelo ID da sessão. Caso não saiba o ID, utilize getAvailableSessions para obter um ID válido antes de chamar esta função.",
-        parameters = {
-            type = "OBJECT",
-            properties = {
-                sessionId = {
-                    type = "INTEGER",
-                    description = "ID da sessão (101, 102, ou 103)."
-                }
-            },
-            required = {"sessionId"}
-        },
-        callback = function(args)
-            return self.logProvider:getLogs(args.sessionId)
-        end
-    }, {
-        name = "getAvailableSessions",
-        description = "Retorna um array de IDs numéricos de todas as sessões disponíveis no sistema, em ordem crescente. Use esta função para obter o menor ID de sessão e, em seguida, caso precise utilize getLogs para buscar os logs dessa sessão.",
-        parameters = {
-            type = "OBJECT",
-            properties = {}
-        },
-        callback = function()
-            return self.logProvider:getAvailableSessions()
-        end
-    }, {
-        name = "get_agent_info",
-        description = "Retorna todas as informações disponíveis do agente.",
-        parameters = {
-            type = "OBJECT",
-            properties = {}
-        },
-        callback = function()
-            print("[Tool Execution] Obtendo informações do agente...")
-            if not self.agent then
-                error("[Tool Execution] O agente não foi definido corretamente no ToolService.")
-            end
-
-            local agent_info = {}
-            for key, value in pairs(self.agent) do
-                agent_info[key] = tostring(value) -- Converte valores para string para evitar erros de serialização
-            end
-
-            return agent_info
-        end
-    }}
+    self.tools = {} -- Array para armazenar as ferramentas
+    self.callbacks = {} -- Array para armazenar os callbacks
     return self
 end
 
-function ToolService:get_tool(name)
-    for _, tool in ipairs(self.tools) do
-        if tool.name == name then
-            return tool
-        end
+function ToolService:add_tool(tool, callback)
+    if not tool.name then
+        error("[Tool Service] O campo 'name' é obrigatório para registrar uma ferramenta.")
     end
-    return nil
+
+    print("[Tool Service] Adicionando nova ferramenta:", tool.name)
+    table.insert(self.tools, {
+        name = tool.name,
+        description = tool.description,
+        parameters = tool.parameters
+    })
+    -- Registra o callback 
+    if type(callback) == "function" then
+        self.callbacks[tool.name] = callback
+    else
+        print("[Tool Service] Erro: Callback não é uma função válida para a ferramenta:", tool.name)
+    end
 end
 
-function ToolService:clean_tools()
-    local cleaned_tools = {}
-    for _, tool in ipairs(self.tools) do
-        local cleaned_tool = {}
-        for key, value in pairs(tool) do
-            if key ~= "callback" then
-                cleaned_tool[key] = value
-            end
+function ToolService:add_tools(tools)
+    for _, tool in ipairs(tools) do
+        if tool.name and type(tool.callback) == "function" then
+            self:add_tool(tool, tool.callback)
+        else
+            print("[Tool Service] Erro: Ferramenta inválida ou callback ausente para:", tool.name or "(sem nome)")
         end
-        table.insert(cleaned_tools, cleaned_tool)
     end
-    return cleaned_tools
+end
+
+function ToolService:execute_tool(name, args)
+    local callback = self.callbacks[name]
+    if callback then
+        return callback(args)
+    else
+        error("[Tool Execution] Ferramenta não encontrada: " .. name)
+    end
+end
+
+function ToolService:execute_tool_by_name(name, args)
+    local callback = self.callbacks[name]
+    if callback then
+        return callback(args)
+    else
+        error("[Tool Execution] Callback não encontrado para a ferramenta: " .. name)
+    end
+end
+
+function ToolService:get_tools()
+    return self.tools
 end
 
 return ToolService
