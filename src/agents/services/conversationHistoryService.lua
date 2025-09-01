@@ -9,18 +9,18 @@ function ConversationHistoryService:new(max_history)
 end
 
 function ConversationHistoryService:add(role, content)
-    print("[DEBUG - Histórico de Conversa] Adicionando ao histórico:", string.format("{ role = '%s', content = '%s' }", role, content))
+    -- print("[DEBUG - Histórico de Conversa] Adicionando ao histórico:", string.format("{ role = '%s', content = '%s' }", role, content))
     table.insert(self.history, { role = role, content = content })
     while #self.history > self.max_history do
-        print("[DEBUG - Histórico de Conversa] Removendo do histórico:", string.format("{ role = '%s', content = '%s' }", self.history[1].role, self.history[1].content))
+        -- print("[DEBUG - Histórico de Conversa] Removendo do histórico:", string.format("{ role = '%s', content = '%s' }", self.history[1].role, self.history[1].content))
         table.remove(self.history, 1)
     end
 end
 
 function ConversationHistoryService:get_messages()
-    print("[DEBUG - Histórico de Conversa] Recuperando mensagens do histórico:")
+    -- print("[DEBUG - Histórico de Conversa] Recuperando mensagens do histórico:")
     for _, entry in ipairs(self.history) do
-        print(string.format("{ role = '%s', content = '%s' }", entry.role, entry.content))
+        -- print(string.format("{ role = '%s', content = '%s' }", entry.role, entry.content))
     end
     local messages = {}
     for _, entry in ipairs(self.history) do
@@ -30,9 +30,9 @@ function ConversationHistoryService:get_messages()
 end
 
 function ConversationHistoryService:get()
-    print("[DEBUG - Histórico de Conversa] Recuperando histórico completo:")
+    -- print("[DEBUG - Histórico de Conversa] Recuperando histórico completo:")
     for _, entry in ipairs(self.history) do
-        print(string.format("{ role = '%s', content = '%s' }", entry.role, entry.content))
+        -- print(string.format("{ role = '%s', content = '%s' }", entry.role, entry.content))
     end
     return self.history
 end

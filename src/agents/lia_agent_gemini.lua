@@ -1,7 +1,7 @@
-local request = require("lib.request")
+local request = require("src/utils/request")
 local cjson = require("cjson")
-local ConversationHistoryService = require("lib.llm.shared.services.conversationHistoryService")
-local ToolService = require("lib.llm.shared.tool_service")
+local ConversationHistoryService = require("src/agents/services/conversationHistoryService")
+local ToolService = require("src/agents/services/tool_service")
 
 local LiaAgentGemini = {}
 LiaAgentGemini.__index = LiaAgentGemini
@@ -63,8 +63,8 @@ function LiaAgentGemini:prepare_payload(data)
     end
 
     -- Debug
-    print("[DEBUG] Mensagens enviadas:", cjson.encode(req_body.contents[1].parts))
-    print("[DEBUG] Tools enviadas:", cjson.encode(req_body.tools))
+    -- print("[DEBUG] Mensagens enviadas:", cjson.encode(req_body.contents[1].parts))
+    -- print("[DEBUG] Tools enviadas:", cjson.encode(req_body.tools))
 
     return req_body
 end
@@ -84,7 +84,7 @@ function LiaAgentGemini:ask(question, data)
 
     local req_body = self:prepare_payload(data)
 
-    print("[Gemini] Payload ajustado enviado com generationConfig:", cjson.encode(req_body))
+    -- print("[Gemini] Payload ajustado enviado com generationConfig:", cjson.encode(req_body))
 
     local url = "https://generativelanguage.googleapis.com/v1beta/models/" .. self.model .. ":generateContent?key=" ..
                     self.api_key
@@ -98,9 +98,9 @@ function LiaAgentGemini:ask(question, data)
             body = cjson.encode(req_body)
         }
 
-        print("[DEBUG] Resposta recebida:", resp.raw)
+        -- print("[DEBUG] Resposta recebida:", resp.raw)
         if resp.json then
-            print("[DEBUG] JSON recebido:", cjson.encode(resp.json))
+            -- print("[DEBUG] JSON recebido:", cjson.encode(resp.json))
         end
 
         if resp.code == 200 and resp.json then

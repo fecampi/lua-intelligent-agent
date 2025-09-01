@@ -1,4 +1,4 @@
-local LogDataProvider = require("lib.llm.shared.log_data_provider")
+local LogDataProvider = require("src/providers/log_data_provider")
 
 local ToolService = {}
 ToolService.__index = ToolService
